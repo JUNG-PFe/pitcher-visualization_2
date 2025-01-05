@@ -147,6 +147,58 @@ with tab1:
                 # 데이터 테이블 출력
                 st.subheader("비교 데이터 테이블")
                 st.dataframe(comparison_df)
+
+                # 구종별 수평/수직 무브먼트 시각화
+                if pitcher1 and pitcher2:
+                    pitcher1_data = df[df['투수'] == pitcher1]
+                    pitcher2_data = df[df['투수'] == pitcher2]
+
+                    if not pitcher1_data.empty and not pitcher2_data.empty:
+                        st.subheader("구종별 수평/수직 무브먼트")
+
+                        # 구종별 평균값 계산
+                        pitcher1_grouped = (
+                            pitcher1_data.groupby("구종")[["HorzBreak", "InducedVertBreak"]]
+                            .mean()
+                            .reset_index()
+                            .assign(투수=pitcher1)
+                        )
+                        pitcher2_grouped = (
+                            pitcher2_data.groupby("구종")[["HorzBreak", "InducedVertBreak"]]
+                            .mean()
+                            .reset_index()
+                            .assign(투수=pitcher2)
+                        )
+
+                        # 두 선수의 데이터 결합
+                        combined_data = pd.concat([pitcher1_grouped, pitcher2_grouped])
+
+                        # 산점도 생성
+                        fig = px.scatter(
+                            combined_data,
+                            x="HorzBreak",
+                            y="InducedVertBreak",
+                            color="투수",
+                            symbol="구종",
+                            title="구종별 수평/수직 무브먼트",
+                            hover_data=["구종", "투수"],
+                            labels={"HorzBreak": "수평 무브 (cm)", "InducedVertBreak": "수직 무브 (cm)"},
+                            color_discrete_map={pitcher1: "red", pitcher2: "blue"}, 
+                        )
+
+                        # 축 및 레이아웃 설정
+                        fig.update_traces(marker=dict(size=12))
+                        fig.update_layout(
+                            width=800,
+                            height=750,
+                            xaxis=dict(range=[-70, 70], linecolor="black"),
+                            yaxis=dict(range=[-70, 70], linecolor="black"),
+                        )
+                        fig.add_shape(type="line", x0=0, y0=-70, x1=0, y1=70, line=dict(color="black", width=2))
+                        fig.add_shape(type="line", x0=-70, y0=0, x1=70, y1=0, line=dict(color="black", width=2))
+
+                        # 산점도 출력
+                        st.plotly_chart(fig)
             else:
                 st.warning("선택한 변수는 시각화에 적합하지 않습니다.")
 # -------------------
@@ -249,7 +301,54 @@ with tab2:
             # 데이터 테이블 출력
             st.subheader("기간 비교 데이터 테이블")
             st.dataframe(combined_df)
+            st.subheader("구종별 수평/수직 무브먼트")
+
+            # 구종별 평균값 계산
+            grouped_df_1 = (
+                filtered_df_1.groupby("구종")[["HorzBreak", "InducedVertBreak"]]
+                .mean()
+                .reset_index()
+                .assign(기간="기간 1")
+            )
+            grouped_df_2 = (
+                filtered_df_2.groupby("구종")[["HorzBreak", "InducedVertBreak"]]
+                .mean()
+                .reset_index()
+                .assign(기간="기간 2")
+            )
+
+            # 데이터 결합
+            movement_data = pd.concat([grouped_df_1, grouped_df_2])
+
+            # 산점도 생성
+            fig3 = px.scatter(
+                movement_data,
+                x="HorzBreak",
+                y="InducedVertBreak",
+                color="기간",
+                symbol="구종",
+                title=f"{pitcher_name} 구종별 수평/수직 무브먼트 비교",
+                hover_data=["구종"],
+                labels={"HorzBreak": "수평 무브 (cm)", "InducedVertBreak": "수직 무브 (cm)"},
+                color_discrete_map={"기간 1": "red", "기간 2": "blue"}  # 색상 지정
+            )
+
+            # 축 및 레이아웃 설정
+            fig3.update_traces(marker=dict(size=12))
+            fig3.update_layout(
+                width=800,
+                height=750,
+                xaxis=dict(range=[-70, 70], linecolor="black"),
+                yaxis=dict(range=[-70, 70], linecolor="black"),
+            )
+            fig3.add_shape(type="line", x0=0, y0=-70, x1=0, y1=70, line=dict(color="black", width=2))
+            fig3.add_shape(type="line", x0=-70, y0=0, x1=70, y1=0, line=dict(color="black", width=2))
+
+            # 산점도 출력
+            st.plotly_chart(fig3)
+
         else:
             st.warning("선택한 변수는 시각화에 적합하지 않습니다.")
+        
     else:
         st.warning("선수를 선택하세요.")
