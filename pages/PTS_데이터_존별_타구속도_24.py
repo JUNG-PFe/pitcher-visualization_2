@@ -39,29 +39,59 @@ if "filter_applied" not in st.session_state:
 # 데이터 필터링 섹션
 st.subheader("데이터 필터링")
 
-# 날짜 필터
-unique_years = sorted(df['Date'].dt.year.unique())
-selected_year = st.selectbox("연도 선택", ["전체"] + unique_years)
+# -------------------
+# 연도 및 월 필터 가로 배치
+# -------------------
+st.subheader("연도 및 월 필터")
+col1, col2 = st.columns(2)
+with col1:
+    unique_years = sorted(df['Date'].dt.year.unique())
+    selected_year = st.selectbox("연도 선택", ["전체"] + unique_years)
+with col2:
+    unique_months = ["전체"] + list(range(1, 13))
+    selected_month = st.selectbox("월 선택", unique_months)
 
-unique_months = ["전체"] + list(range(1, 13))
-selected_month = st.selectbox("월 선택", unique_months)
+# -------------------
+# 날짜 범위 필터 (길게 표시)
+# -------------------
+st.subheader("날짜 범위 필터")
+date_range = st.date_input(
+    "날짜 범위",
+    [df['Date'].min(), df['Date'].max()],  # 기본값 설정
+    key="date_range",
+    label_visibility="visible",
+    help="필터링에 사용할 시작 날짜와 종료 날짜를 선택하세요."
+)
 
-date_range = st.date_input("날짜 범위 선택", [])
+# -------------------
+# 투수 이름 검색 및 선택 가로 배치
+# -------------------
+st.subheader("투수 이름 필터")
+col3, col4 = st.columns(2)
+with col3:
+    pitcher_search_query = st.text_input("투수 이름 검색", "").strip()
+    if pitcher_search_query:
+        pitcher_suggestions = [
+            name for name in sorted(df['Pitcher'].unique()) 
+            if pitcher_search_query.lower() in name.lower()
+        ]
+    else:
+        pitcher_suggestions = sorted(df['Pitcher'].unique())
+with col4:
+    if pitcher_suggestions:
+        pitcher_name = st.selectbox("투수 이름 선택", pitcher_suggestions)
+    else:
+        pitcher_name = None
 
-# 투수 이름 필터
-pitcher_search_query = st.text_input("투수 이름 검색", "").strip()
-if pitcher_search_query:
-    pitcher_suggestions = [name for name in sorted(df['Pitcher'].unique()) if pitcher_search_query.lower() in name.lower()]
-else:
-    pitcher_suggestions = sorted(df['Pitcher'].unique())
-
-if pitcher_suggestions:
-    pitcher_name = st.selectbox("투수 이름 선택", pitcher_suggestions)
-else:
-    pitcher_name = None
-
+# -------------------
 # 구종 필터
-pitch_type = st.multiselect("구종 선택", df['PitchType'].unique())
+# -------------------
+st.subheader("구종 필터")
+pitch_type = st.multiselect(
+    "구종 선택",
+    df['PitchType'].unique(),
+    help="원하는 구종을 선택하세요."
+)
 
 # 검색 버튼
 if st.button("검색 실행"):

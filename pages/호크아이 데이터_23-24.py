@@ -47,40 +47,67 @@ if "filter_applied" not in st.session_state:
 # 데이터 필터링 섹션
 st.subheader("데이터 필터링")
 
-# 날짜 필터
-st.subheader("연도 및 달 필터")
-unique_years = sorted(df['Date'].dt.year.unique())
-selected_year = st.selectbox("연도 선택", unique_years)
+# -------------------
+# 연도 및 달 필터 가로 배치
+# -------------------
+st.subheader("연도 및 달 ")
+col1, col2 = st.columns(2)
+with col1:
+    unique_years = sorted(df['Date'].dt.year.unique())
+    selected_year = st.selectbox("연도 선택", unique_years)
+with col2:
+    unique_months = ["전체"] + list(range(1, 13))
+    selected_month = st.selectbox("월 선택", unique_months)
 
-unique_months = ["전체"] + list(range(1, 13))
-selected_month = st.selectbox("월 선택", unique_months)
+# -------------------
+# 날짜 범위 필터 (길게 표시)
+# -------------------
+st.subheader("기간 선택")
+date_range = st.date_input(
+    "날짜 범위",
+    [df['Date'].min(), df['Date'].max()],  # 기본값 설정
+    key="date_range",
+    label_visibility="visible",
+    help="필터링에 사용할 시작 날짜와 종료 날짜를 선택하세요."
+)
 
-date_range = st.date_input("날짜 범위 선택", [])
+# -------------------
+# 투수 이름 검색 및 선택 가로 배치
+# -------------------
+st.subheader("투수 이름")
+col3, col4 = st.columns(2)
+with col3:
+    search_query = st.text_input("투수 이름 검색", "").strip()
+    if search_query:
+        suggestions = [name for name in sorted(df['투수'].unique()) if search_query.lower() in name.lower()]
+    else:
+        suggestions = sorted(df['투수'].unique())
+with col4:
+    if suggestions:
+        pitcher_name = st.selectbox("투수 이름 선택", suggestions)
+    else:
+        pitcher_name = None
 
-# 투수 이름 필터
-search_query = st.text_input("투수 이름 검색", "").strip()
-if search_query:
-    suggestions = [name for name in sorted(df['투수'].unique()) if search_query.lower() in name.lower()]
-else:
-    suggestions = sorted(df['투수'].unique())
+# -------------------
+# 타자 유형 및 주자 상황 필터 가로 배치
+# -------------------
+st.subheader("타자 유형 및 주자 상황")
+col5, col6 = st.columns(2)
+with col5:
+    batter_type = st.selectbox("타자 유형 선택", ["전체", "우타", "좌타"])
+with col6:
+    runner_status = st.selectbox("주자 상황 선택", ["전체", "주자무", "나머지"])
 
-if suggestions:
-    pitcher_name = st.selectbox("투수 이름 선택", suggestions)
-else:
-    pitcher_name = None
-
-# 타자 유형 필터
-batter_type = st.selectbox("타자 유형 선택", ["전체", "우타", "좌타"])
-
-# 구종 필터
-pitch_type = st.multiselect("구종 선택", df['구종'].unique())
-
-# 주자 상황 필터
-runner_status = st.selectbox("주자 상황 선택", ["전체", "주자무", "나머지"])
-
-# 타격결과 필터 추가
-unique_hit_results = sorted(df['타격결과'].dropna().astype(str).unique())  # 고유한 타격결과 값 가져오기
-selected_hit_results = st.multiselect("타격결과 선택", ["전체"] + unique_hit_results, default=[])
+# -------------------
+# 구종 및 타격결과 필터 가로 배치
+# -------------------
+st.subheader("구종 및 타격결과")
+col7, col8 = st.columns(2)
+with col7:
+    pitch_type = st.multiselect("구종 선택", df['구종'].unique())
+with col8:
+    unique_hit_results = sorted(df['타격결과'].dropna().astype(str).unique())  # 고유한 타격결과 값 가져오기
+    selected_hit_results = st.multiselect("타격결과 선택", ["전체"] + unique_hit_results, default=[])
 
 # 검색 버튼
 if st.button("검색 실행"):
@@ -169,8 +196,8 @@ if st.session_state.filter_applied:
         )
         fig.update_traces(marker=dict(size=15))
         fig.update_layout(
-            width=800,  # 가로 크기
-            height=750,  # 세로 크기
+            width=700,  # 가로 크기
+            height=800,  # 세로 크기
             xaxis=dict(range=[-70, 70], showline=False),
             yaxis=dict(range=[-10, 150], showline=False)
         )

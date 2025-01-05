@@ -27,6 +27,12 @@ df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
 df = df.dropna(subset=['Date'])
 
 # 앱 제목
+
+st.set_page_config(
+    page_title="PTS_데이터_24",
+    layout="wide"  # 화면 너비를 넓게 설정
+)
+
 st.title("24 PTS 투수 데이터 필터링 및 분석 앱")
 
 # 세션 상태 초기화
@@ -36,54 +42,77 @@ if "filter_applied" not in st.session_state:
 # 데이터 필터링 섹션
 st.subheader("데이터 필터링")
 
-# 날짜 필터
-unique_years = sorted(df['Date'].dt.year.unique())
-selected_year = st.selectbox("연도 선택", ["전체"] + unique_years)
+# -------------------
+# 연도 및 달 필터 가로 배치
+# -------------------
+st.subheader("연도 및 달 필터")
+col1, col2 = st.columns(2)
+with col1:
+    unique_years = sorted(df['Date'].dt.year.unique())
+    selected_year = st.selectbox("연도 선택", ["전체"] + unique_years)
+with col2:
+    unique_months = ["전체"] + list(range(1, 13))
+    selected_month = st.selectbox("월 선택", unique_months)
 
-unique_months = ["전체"] + list(range(1, 13))
-selected_month = st.selectbox("월 선택", unique_months)
+# -------------------
+# 날짜 범위 필터 (길게 표시)
+# -------------------
+st.subheader("날짜 범위 필터")
+date_range = st.date_input(
+    "날짜 범위",
+    [df['Date'].min(), df['Date'].max()],  # 기본값 설정
+    key="date_range",
+    label_visibility="visible",
+    help="필터링에 사용할 시작 날짜와 종료 날짜를 선택하세요."
+)
 
-date_range = st.date_input("날짜 범위 선택", [])
+# -------------------
+# 투수 이름 검색 및 타자 이름 검색 가로 배치
+# -------------------
+st.subheader("투수 및 타자 이름 검색")
+col3, col4 = st.columns(2)
+with col3:
+    pitcher_search_query = st.text_input("투수 이름 검색", "").strip()
+    if pitcher_search_query:
+        pitcher_suggestions = [name for name in sorted(df['Pitcher'].unique()) if pitcher_search_query.lower() in name.lower()]
+    else:
+        pitcher_suggestions = sorted(df['Pitcher'].unique())
+    if pitcher_suggestions:
+        pitcher_name = st.selectbox("투수 이름 선택", pitcher_suggestions)
+    else:
+        pitcher_name = None
+with col4:
+    batter_search_query = st.text_input("타자 이름 검색", "").strip()
+    if batter_search_query:
+        batter_suggestions = [name for name in sorted(df['Batter'].unique()) if batter_search_query.lower() in name.lower()]
+    else:
+        batter_suggestions = sorted(df['Batter'].unique())
+    if batter_suggestions:
+        Batter_name = st.selectbox("타자 이름 선택", ["전체"] + batter_suggestions)
+    else:
+        Batter_name = "전체"
 
-# 투수 이름 필터
-pitcher_search_query = st.text_input("투수 이름 검색", "").strip()
-if pitcher_search_query:
-    pitcher_suggestions = [name for name in sorted(df['Pitcher'].unique()) if pitcher_search_query.lower() in name.lower()]
-else:
-    pitcher_suggestions = sorted(df['Pitcher'].unique())
+# -------------------
+# 주자 상황 및 볼 카운트 필터 가로 배치
+# -------------------
+st.subheader("주자 상황 및 볼 카운트")
+col5, col6 = st.columns(2)
+with col5:
+    runner_status = st.selectbox("주자 상황 선택", ["전체", "주자무", "나머지"])
+with col6:
+    unique_bcounts = ["전체"] + sorted(df['BCOUNT'].unique())
+    selected_bcount = st.selectbox("볼카운트 선택", unique_bcounts)
 
-if pitcher_suggestions:
-    pitcher_name = st.selectbox("투수 이름 선택", pitcher_suggestions)  # "전체" 제거
-else:
-    pitcher_name = None
-
-# 타자 이름 필터
-batter_search_query = st.text_input("타자 이름 검색", "").strip()
-if batter_search_query:
-    batter_suggestions = [name for name in sorted(df['Batter'].unique()) if batter_search_query.lower() in name.lower()]
-else:
-    batter_suggestions = sorted(df['Batter'].unique())
-
-if batter_suggestions:
-    Batter_name = st.selectbox("타자 이름 선택", ["전체"] + batter_suggestions)
-else:
-    Batter_name = "전체"
-
-# 구종 필터
-pitch_type = st.multiselect("구종 선택", df['PitchType'].unique())
-
-# 주자 상황 필터
-runner_status = st.selectbox("주자 상황 선택", ["전체", "주자무", "나머지"])
-
-# 볼 카운트 필터
-unique_bcounts = ["전체"] + sorted(df['BCOUNT'].unique())
-selected_bcount = st.selectbox("볼카운트 선택", unique_bcounts)
-
-# 타격결과 필터 추가
-
-unique_hit_results = sorted(df['Result'].dropna().astype(str).unique())  # 고유한 타격결과 값 가져오기
-selected_hit_results = st.multiselect("타격결과 선택", ["전체"] + unique_hit_results, default=[])
-
+# -------------------
+# 구종 및 타격결과 필터 가로 배치
+# -------------------
+st.subheader("구종 및 타격결과")
+col7, col8 = st.columns(2)
+with col7:
+    pitch_type = st.multiselect("구종 선택", df['PitchType'].unique())
+with col8:
+    unique_hit_results = sorted(df['Result'].dropna().astype(str).unique())
+    selected_hit_results = st.multiselect("타격결과 선택", ["전체"] + unique_hit_results, default=[])
 
 # 검색 버튼
 if st.button("검색 실행"):
