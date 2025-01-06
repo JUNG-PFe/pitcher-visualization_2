@@ -29,8 +29,21 @@ df = load_new_data()
 df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
 df = df.dropna(subset=['Date'])
 
-# 앱 제목
-st.title("24 PTS 투수 데이터 필터링 및 분석 앱")
+# 페이지 설정 (스크립트의 맨 위에 위치해야 함)
+st.set_page_config(
+    page_title="24 PTS 투수 존별 타구속도",
+    page_icon="⚾",
+    layout="wide"
+)
+
+# -------------------------------
+# 로그인 여부 확인
+# -------------------------------
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.error("로그인 후에 이 페이지를 이용할 수 있습니다.")
+    st.stop()  # 로그인 상태가 아니면 여기서 실행 중지
+
+st.title("24 PTS 투수 존별 안타 타구속도")
 
 # 세션 상태 초기화
 if "filter_applied" not in st.session_state:

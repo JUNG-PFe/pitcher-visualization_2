@@ -2,6 +2,9 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import io
+
+
+
 # 데이터 컬러 설정
 cols = {
     "직구": "#4C569B",
@@ -29,11 +32,20 @@ df = df.dropna(subset=['Date'])
 # 앱 제목
 
 st.set_page_config(
-    page_title="PTS_데이터_24",
-    layout="wide"  # 화면 너비를 넓게 설정
+    page_title="24 PTS 데이터 필터링 및 분석 앱",
+    page_icon="⚾",
+    layout="wide"
 )
 
+# 로그인 여부 확인
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.error("로그인 후에 이 페이지를 이용할 수 있습니다.")
+    st.stop()  # 로그인 상태가 아닌 경우 실행 중지
+
+# 로그인 상태일 때만 아래 코드 실행
 st.title("24 PTS 투수 데이터 필터링 및 분석 앱")
+
+
 
 # 세션 상태 초기화
 if "filter_applied" not in st.session_state:

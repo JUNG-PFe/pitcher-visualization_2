@@ -37,8 +37,21 @@ def load_data():
 # 데이터 로드
 df = load_data()
 
-# 앱 제목
-st.title("23-24 호크아이 투수 데이터 필터링 및 분석 앱")
+
+st.set_page_config(
+    page_title="23-24 호크아이 투수 데이터 필터링 및 분석 앱",
+    page_icon="⚾",
+    layout="wide"
+)
+
+# -------------------------------
+# 로그인 여부 확인
+# -------------------------------
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.error("로그인 후에 이 페이지를 이용할 수 있습니다.")
+    st.stop()  # 로그인 상태가 아니면 여기서 실행 중지
+
+st.title("호크아이 데이터 23-24 분석")
 
 # 세션 상태 초기화
 if "filter_applied" not in st.session_state:

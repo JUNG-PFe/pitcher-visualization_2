@@ -37,7 +37,20 @@ def load_data():
 # 데이터 로드
 df = load_data()
 
-st.title("23-24 호크아이 데이터 선수 간 및 기간 간 비교 분석")
+st.set_page_config(
+    page_title="23-24 호크아이 데이터 선수간 비교",
+    page_icon="⚾",
+    layout="wide"
+)
+
+# -------------------------------
+# 로그인 여부 확인
+# -------------------------------
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.error("로그인 후에 이 페이지를 이용할 수 있습니다.")
+    st.stop()  # 로그인 상태가 아니면 여기서 실행 중지
+
+st.title("호크아이 데이터 선수 간 비교분석")
 
 # 탭 생성
 tab1, tab2 = st.tabs(["선수 간 비교", "기간 간 비교"])
