@@ -99,24 +99,27 @@ if st.session_state.filter_applied:
             'Extension': lambda x: round(x.mean() * 100, 0)
         }).reset_index()
 
-        # 시각화할 변수 선택
+        # 시각화할 변수 선택 (다중 선택)
         st.sidebar.header("시각화할 변수 선택")
-        variable = st.sidebar.selectbox(
+        selected_variables = st.sidebar.multiselect(
             "변수를 선택하세요",
-            ["RelSpeed", "SpinRate", "회전효율", "InducedVertBreak", "HorzBreak", "RelHeight", "RelSide", "Extension"]
+            ["RelSpeed", "SpinRate", "회전효율", "InducedVertBreak", "HorzBreak", "RelHeight", "RelSide", "Extension"],
+            default=["RelSpeed"]  # 기본값 설정
         )
 
-        # 트렌드 시각화
-        fig = px.line(
-            aggregated_df,
-            x='15_day_interval',
-            y=variable,
-            color='구종',
-            color_discrete_map=cols,  # 색상 매핑 적용
-            title=f"{pitcher_name}의 15일 간격 투구 유형별 {variable} 트렌드" if pitcher_name else f"15일 간격 투구 유형별 {variable} 트렌드",
-            labels={"15_day_interval": "날짜", variable: variable, "구종": "구종"}
-        )
-        st.plotly_chart(fig)
+        if selected_variables:
+            for variable in selected_variables:
+                # 트렌드 시각화
+                fig = px.line(
+                    aggregated_df,
+                    x='15_day_interval',
+                    y=variable,
+                    color='구종',
+                    color_discrete_map=cols,  # 색상 매핑 적용
+                    title=f"{pitcher_name}의 15일 간격 투구 유형별 {variable} 트렌드" if pitcher_name else f"15일 간격 투구 유형별 {variable} 트렌드",
+                    labels={"15_day_interval": "날짜", variable: variable, "구종": "구종"}
+                )
+                st.plotly_chart(fig)
 
         # 결과 다운로드
         st.subheader("결과 다운로드")
@@ -136,4 +139,3 @@ if st.session_state.filter_applied:
             file_name='filtered_data.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
-      

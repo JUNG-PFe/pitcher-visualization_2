@@ -79,6 +79,7 @@ with tab1:
             st.warning("선수 2 검색 결과가 없습니다.")
             pitcher2 = None
             
+    # 구종 선택
     pitch_type = st.multiselect("구종 선택", df['구종'].unique(), key="pitch_type")
 
     # 비교할 변수 선택
@@ -87,120 +88,121 @@ with tab1:
         "Tilt", "InducedVertBreak", "HorzBreak", 
         "RelHeight", "RelSide", "Extension"
     ]
-    variable = st.selectbox("비교할 변수 선택", compare_variables)
+    selected_variables = st.multiselect("비교할 변수 선택", compare_variables)
 
-    # 데이터 필터링
-    if pitcher1 and pitcher2:
+    if pitcher1 and pitcher2 and selected_variables:
+        # 데이터 필터링
         pitcher1_data = df[df['투수'] == pitcher1]
         pitcher2_data = df[df['투수'] == pitcher2]
 
         if not pitcher1_data.empty and not pitcher2_data.empty:
-            # Tilt 처리
-            if variable == "Tilt":
-                pitcher1_value = pitcher1_data[variable].mode().iloc[0] if not pitcher1_data[variable].mode().empty else "N/A"
-                pitcher2_value = pitcher2_data[variable].mode().iloc[0] if not pitcher2_data[variable].mode().empty else "N/A"
-            else:
-                # 평균값 계산
-                pitcher1_value = round(pitcher1_data[variable].mean(), 0)
-                pitcher2_value = round(pitcher2_data[variable].mean(), 0)
+            comparison_results = []
+            for variable in selected_variables:
+                # Tilt 처리
+                if variable == "Tilt":
+                    pitcher1_value = pitcher1_data[variable].mode().iloc[0] if not pitcher1_data[variable].mode().empty else "N/A"
+                    pitcher2_value = pitcher2_data[variable].mode().iloc[0] if not pitcher2_data[variable].mode().empty else "N/A"
+                else:
+                    # 평균값 계산
+                    pitcher1_value = round(pitcher1_data[variable].mean(), 2)
+                    pitcher2_value = round(pitcher2_data[variable].mean(), 2)
 
-            # 결과 출력
-            st.write(f"**{pitcher1} 평균 {variable}:** {pitcher1_value}")
-            st.write(f"**{pitcher2} 평균 {variable}:** {pitcher2_value}")
-
-            # 시각화 (Tilt는 막대그래프에 적합하지 않으므로 제외)
-            if variable != "Tilt":
-                # 차이 계산
-                difference = abs(pitcher1_value - pitcher2_value)
-
-                # 데이터프레임 생성
-                comparison_df = pd.DataFrame({
-                    "선수": [pitcher1, pitcher2],
-                    "평균값": [pitcher1_value, pitcher2_value]
+                # 결과 저장
+                comparison_results.append({
+                    "변수": variable,
+                    "선수 1 평균": pitcher1_value,
+                    "선수 2 평균": pitcher2_value,
+                    "차이": abs(pitcher1_value - pitcher2_value) if variable != "Tilt" else "N/A"
                 })
 
-                # 그래프 생성
-                fig1 = px.bar(
-                    comparison_df,
+            # 결과를 데이터프레임으로 표시
+            comparison_df = pd.DataFrame(comparison_results)
+            st.subheader("선수 간 변수 비교 결과")
+            st.dataframe(comparison_df)
+
+            # 여러 변수 시각화
+            for variable in selected_variables:
+                if variable == "Tilt":
+                    st.warning(f"{variable} 변수는 시각화에 적합하지 않습니다.")
+                    continue
+
+                # 변수별 막대그래프 생성
+                combined_df = pd.DataFrame({
+                    "선수": [pitcher1, pitcher2],
+                    "평균값": [
+                        comparison_df.loc[comparison_df["변수"] == variable, "선수 1 평균"].values[0],
+                        comparison_df.loc[comparison_df["변수"] == variable, "선수 2 평균"].values[0]
+                    ]
+                })
+
+                fig = px.bar(
+                    combined_df,
                     x="선수",
                     y="평균값",
-                    title=f"{variable} 선수 간 비교 (차이: {difference})",
+                    title=f"{variable} 선수 간 비교 ({pitcher1} vs {pitcher2})",
                     labels={"평균값": variable},
-                    color="평균값",  # 값에 따라 색상 변화
-                    color_continuous_scale="Viridis"  # 색상 스케일 적용
+                    color="평균값",
+                    color_continuous_scale="Viridis"
                 )
 
-                # y축 범위 조정 (차이를 강조하기 위해)
-                fig1.update_layout(
+                # y축 범위 조정
+                fig.update_layout(
                     yaxis=dict(
-                        range=[min(pitcher1_value, pitcher2_value) - 15, max(pitcher1_value, pitcher2_value) + 15],  # 최소, 최대값 조정
+                        range=[
+                            min(combined_df["평균값"]) - 15,
+                            max(combined_df["평균값"]) + 15
+                        ],
                         title=variable
                     ),
                     xaxis=dict(title="선수"),
-                    title_font=dict(size=20),  # 제목 폰트 크기 조정
-                    width=800,  # 그래프 넓이
-                    height=600  # 그래프 높이
+                    title_font=dict(size=20),
+                    width=800,
+                    height=600
                 )
+                st.plotly_chart(fig)
 
-                # 그래프 출력
-                st.plotly_chart(fig1)
-                # 데이터 테이블 출력
-                st.subheader("비교 데이터 테이블")
-                st.dataframe(comparison_df)
+            # 구종별 수평/수직 무브먼트 시각화
+            st.subheader("구종별 수평/수직 무브먼트")
+            pitcher1_grouped = (
+                pitcher1_data.groupby("구종")[["HorzBreak", "InducedVertBreak"]]
+                .mean()
+                .reset_index()
+                .assign(투수=pitcher1)
+            )
+            pitcher2_grouped = (
+                pitcher2_data.groupby("구종")[["HorzBreak", "InducedVertBreak"]]
+                .mean()
+                .reset_index()
+                .assign(투수=pitcher2)
+            )
 
-                # 구종별 수평/수직 무브먼트 시각화
-                if pitcher1 and pitcher2:
-                    pitcher1_data = df[df['투수'] == pitcher1]
-                    pitcher2_data = df[df['투수'] == pitcher2]
+            # 두 선수의 데이터 결합
+            combined_data = pd.concat([pitcher1_grouped, pitcher2_grouped])
 
-                    if not pitcher1_data.empty and not pitcher2_data.empty:
-                        st.subheader("구종별 수평/수직 무브먼트")
+            fig = px.scatter(
+                combined_data,
+                x="HorzBreak",
+                y="InducedVertBreak",
+                color="투수",
+                symbol="구종",
+                title="구종별 수평/수직 무브먼트",
+                hover_data=["구종", "투수"],
+                labels={"HorzBreak": "수평 무브 (cm)", "InducedVertBreak": "수직 무브 (cm)"},
+                color_discrete_map={pitcher1: "red", pitcher2: "blue"}
+            )
 
-                        # 구종별 평균값 계산
-                        pitcher1_grouped = (
-                            pitcher1_data.groupby("구종")[["HorzBreak", "InducedVertBreak"]]
-                            .mean()
-                            .reset_index()
-                            .assign(투수=pitcher1)
-                        )
-                        pitcher2_grouped = (
-                            pitcher2_data.groupby("구종")[["HorzBreak", "InducedVertBreak"]]
-                            .mean()
-                            .reset_index()
-                            .assign(투수=pitcher2)
-                        )
+            # 축 및 레이아웃 설정
+            fig.update_traces(marker=dict(size=12))
+            fig.update_layout(
+                width=800,
+                height=750,
+                xaxis=dict(range=[-70, 70], linecolor="black"),
+                yaxis=dict(range=[-70, 70], linecolor="black"),
+            )
+            fig.add_shape(type="line", x0=0, y0=-70, x1=0, y1=70, line=dict(color="black", width=2))
+            fig.add_shape(type="line", x0=-70, y0=0, x1=70, y1=0, line=dict(color="black", width=2))
 
-                        # 두 선수의 데이터 결합
-                        combined_data = pd.concat([pitcher1_grouped, pitcher2_grouped])
-
-                        # 산점도 생성
-                        fig = px.scatter(
-                            combined_data,
-                            x="HorzBreak",
-                            y="InducedVertBreak",
-                            color="투수",
-                            symbol="구종",
-                            title="구종별 수평/수직 무브먼트",
-                            hover_data=["구종", "투수"],
-                            labels={"HorzBreak": "수평 무브 (cm)", "InducedVertBreak": "수직 무브 (cm)"},
-                            color_discrete_map={pitcher1: "red", pitcher2: "blue"}, 
-                        )
-
-                        # 축 및 레이아웃 설정
-                        fig.update_traces(marker=dict(size=12))
-                        fig.update_layout(
-                            width=800,
-                            height=750,
-                            xaxis=dict(range=[-70, 70], linecolor="black"),
-                            yaxis=dict(range=[-70, 70], linecolor="black"),
-                        )
-                        fig.add_shape(type="line", x0=0, y0=-70, x1=0, y1=70, line=dict(color="black", width=2))
-                        fig.add_shape(type="line", x0=-70, y0=0, x1=70, y1=0, line=dict(color="black", width=2))
-
-                        # 산점도 출력
-                        st.plotly_chart(fig)
-            else:
-                st.warning("선택한 변수는 시각화에 적합하지 않습니다.")
+            st.plotly_chart(fig)
 # -------------------
 # Tab 2: 기간 간 비교
 # -------------------
@@ -234,11 +236,11 @@ with tab2:
     with col4:
         end_date_2 = st.date_input("기간 2 종료 날짜", df['Date'].max(), key="end_date_2")
 
-    # 비교할 변수 선택
-    variable = st.selectbox("비교할 변수 선택", compare_variables, key="period_variable")
+    # 비교할 변수 선택 (여러 변수)
+    selected_variables = st.multiselect("비교할 변수 선택", compare_variables, key="period_variables")
 
     # 데이터 필터링 (선수 이름 포함)
-    if pitcher_name:
+    if pitcher_name and selected_variables:
         filtered_df_1 = df[(df['투수'] == pitcher_name) & 
                            (df['Date'] >= pd.Timestamp(start_date_1)) & 
                            (df['Date'] <= pd.Timestamp(end_date_1))]
@@ -248,62 +250,74 @@ with tab2:
                            (df['Date'] <= pd.Timestamp(end_date_2))]
 
         if not filtered_df_1.empty and not filtered_df_2.empty:
-            # Tilt 처리
-            if variable == "Tilt":
-                value_1 = filtered_df_1[variable].mode().iloc[0] if not filtered_df_1[variable].mode().empty else "N/A"
-                value_2 = filtered_df_2[variable].mode().iloc[0] if not filtered_df_2[variable].mode().empty else "N/A"
-            else:
-                # 평균값 계산 (숫자형 변수)
-                value_1 = round(filtered_df_1[variable].mean(), 0)
-                value_2 = round(filtered_df_2[variable].mean(), 0)
+            comparison_results = []
+            for variable in selected_variables:
+                # Tilt 처리
+                if variable == "Tilt":
+                    value_1 = filtered_df_1[variable].mode().iloc[0] if not filtered_df_1[variable].mode().empty else "N/A"
+                    value_2 = filtered_df_2[variable].mode().iloc[0] if not filtered_df_2[variable].mode().empty else "N/A"
+                else:
+                    # 평균값 계산 (숫자형 변수)
+                    value_1 = round(filtered_df_1[variable].mean(), 2)
+                    value_2 = round(filtered_df_2[variable].mean(), 2)
 
-            # 결과 출력
-            st.write(f"**{pitcher_name} 기간 1 ({start_date_1} ~ {end_date_1}) 평균 {variable}:** {value_1}")
-            st.write(f"**{pitcher_name} 기간 2 ({start_date_2} ~ {end_date_2}) 평균 {variable}:** {value_2}")
+                # 결과 저장
+                comparison_results.append({
+                    "변수": variable,
+                    "기간 1 평균": value_1,
+                    "기간 2 평균": value_2,
+                    "차이": abs(value_1 - value_2) if variable != "Tilt" else "N/A"
+                })
 
-            # 시각화 (Tilt는 막대그래프에 적합하지 않으므로 제외)
-            if variable != "Tilt":
-                # 차이 계산
-                difference = abs(value_1 - value_2)
+            # 결과를 데이터프레임으로 표시
+            comparison_df = pd.DataFrame(comparison_results)
+            st.subheader("기간 간 변수 비교 결과")
+            st.dataframe(comparison_df)
 
-            # 데이터프레임 생성
-            combined_df = pd.DataFrame({
-                "기간": ["기간 1", "기간 2"],
-                "평균값": [value_1, value_2]
-            })
+            # 여러 변수 시각화
+            for variable in selected_variables:
+                if variable == "Tilt":
+                    st.warning(f"{variable} 변수는 시각화에 적합하지 않습니다.")
+                    continue
 
-            # 그래프 생성
-            fig2 = px.bar(
-                combined_df,
-                x="기간",
-                y="평균값",
-                title=f"{variable} 기간 간 비교 ({pitcher_name}) (차이: {difference})",
-                labels={"평균값": variable},
-                color="평균값",  # 값에 따라 색상 변화
-                color_continuous_scale="Viridis"  # 색상 스케일 적용
-            )
+                # 데이터프레임 생성
+                combined_df = pd.DataFrame({
+                    "기간": ["기간 1", "기간 2"],
+                    "평균값": [
+                        comparison_df.loc[comparison_df["변수"] == variable, "기간 1 평균"].values[0],
+                        comparison_df.loc[comparison_df["변수"] == variable, "기간 2 평균"].values[0]
+                    ]
+                })
 
-            # y축 범위 조정 (차이를 강조하기 위해)
-            fig2.update_layout(
-                yaxis=dict(
-                    range=[min(value_1, value_2) - 10, max(value_1, value_2) + 10],  # 최소, 최대값 조정
-                    title=variable
-                ),
-                xaxis=dict(title="기간"),
-                title_font=dict(size=20),  # 제목 폰트 크기 조정
-                width=800,  # 그래프 넓이
-                height=600  # 그래프 높이
-            )
+                # 변수별 막대그래프 생성
+                fig = px.bar(
+                    combined_df,
+                    x="기간",
+                    y="평균값",
+                    title=f"{variable} 기간 간 비교 ({pitcher_name})",
+                    labels={"평균값": variable},
+                    color="평균값",  # 값에 따라 색상 변화
+                    color_continuous_scale="Viridis"  # 색상 스케일 적용
+                )
 
-            # 그래프 출력
-            st.plotly_chart(fig2)
+                # y축 범위 조정
+                fig.update_layout(
+                    yaxis=dict(
+                        range=[
+                            min(combined_df["평균값"]) - 10, 
+                            max(combined_df["평균값"]) + 10
+                        ],
+                        title=variable
+                    ),
+                    xaxis=dict(title="기간"),
+                    title_font=dict(size=20),  # 제목 폰트 크기 조정
+                    width=800,  # 그래프 넓이
+                    height=600  # 그래프 높이
+                )
+                st.plotly_chart(fig)
 
-            # 데이터 테이블 출력
-            st.subheader("기간 비교 데이터 테이블")
-            st.dataframe(combined_df)
+            # 구종별 수평/수직 무브먼트 시각화
             st.subheader("구종별 수평/수직 무브먼트")
-
-            # 구종별 평균값 계산
             grouped_df_1 = (
                 filtered_df_1.groupby("구종")[["HorzBreak", "InducedVertBreak"]]
                 .mean()
@@ -330,7 +344,7 @@ with tab2:
                 title=f"{pitcher_name} 구종별 수평/수직 무브먼트 비교",
                 hover_data=["구종"],
                 labels={"HorzBreak": "수평 무브 (cm)", "InducedVertBreak": "수직 무브 (cm)"},
-                color_discrete_map={"기간 1": "red", "기간 2": "blue"}  # 색상 지정
+                color_discrete_map={"기간 1": "red", "기간 2": "blue"}
             )
 
             # 축 및 레이아웃 설정
@@ -346,9 +360,3 @@ with tab2:
 
             # 산점도 출력
             st.plotly_chart(fig3)
-
-        else:
-            st.warning("선택한 변수는 시각화에 적합하지 않습니다.")
-        
-    else:
-        st.warning("선수를 선택하세요.")

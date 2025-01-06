@@ -67,30 +67,49 @@ date_range = st.date_input(
 )
 
 # -------------------
-# 투수 이름 검색 및 타자 이름 검색 가로 배치
+# 투수 및 타자 검색 및 유형 필터 (3x2 레이아웃)
 # -------------------
-st.subheader("투수 및 타자 이름 검색")
-col3, col4 = st.columns(2)
-with col3:
+st.subheader("투수 및 타자 검색 및 유형 필터")
+col1, col2 = st.columns(2)
+
+# 첫 번째 열 (투수 유형, 투수 이름 검색, 투수 이름 선택)
+with col1:
+    # 투수 유형
+    pitcher_throws = ["전체"] + sorted(df['PitcherThrows'].dropna().unique())
+    selected_pitcher_throw = st.selectbox("투수 유형 선택 (좌투/우투)", pitcher_throws)
+
+    # 투수 이름 검색
     pitcher_search_query = st.text_input("투수 이름 검색", "").strip()
     if pitcher_search_query:
         pitcher_suggestions = [name for name in sorted(df['Pitcher'].unique()) if pitcher_search_query.lower() in name.lower()]
     else:
         pitcher_suggestions = sorted(df['Pitcher'].unique())
+
+    # 투수 이름 선택
     if pitcher_suggestions:
         pitcher_name = st.selectbox("투수 이름 선택", pitcher_suggestions)
     else:
         pitcher_name = None
-with col4:
+
+# 두 번째 열 (타자 유형, 타자 이름 검색, 타자 이름 선택)
+with col2:
+    # 타자 유형
+    batter_sides = ["전체"] + sorted(df['BatterSide'].dropna().unique())
+    selected_batter_side = st.selectbox("타자 유형 선택 (좌타/우타)", batter_sides)
+
+    # 타자 이름 검색
     batter_search_query = st.text_input("타자 이름 검색", "").strip()
     if batter_search_query:
         batter_suggestions = [name for name in sorted(df['Batter'].unique()) if batter_search_query.lower() in name.lower()]
     else:
         batter_suggestions = sorted(df['Batter'].unique())
+
+    # 타자 이름 선택
     if batter_suggestions:
         Batter_name = st.selectbox("타자 이름 선택", ["전체"] + batter_suggestions)
     else:
         Batter_name = "전체"
+
 
 # -------------------
 # 주자 상황 및 볼 카운트 필터 가로 배치
@@ -156,6 +175,14 @@ if st.session_state.filter_applied:
     # 타격결과 필터 적용
     if selected_hit_results:
         filtered_df = filtered_df[filtered_df['Result'].astype(str).isin(selected_hit_results)]
+
+    # 타자 유형 필터
+    if selected_batter_side != "전체":
+        filtered_df = filtered_df[filtered_df['BatterSide'] == selected_batter_side]
+
+    # 투수 유형 필터
+    if selected_pitcher_throw != "전체":
+        filtered_df = filtered_df[filtered_df['PitcherThrows'] == selected_pitcher_throw]
 
     # PTS 데이터 전처리
     filtered_df['PTS_location_X'] = pd.to_numeric(filtered_df['PTS_location_X'], errors='coerce')
