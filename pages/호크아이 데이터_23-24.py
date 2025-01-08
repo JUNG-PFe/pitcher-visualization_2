@@ -66,7 +66,7 @@ st.subheader("데이터 필터링")
 st.subheader("연도 및 달 ")
 col1, col2 = st.columns(2)
 with col1:
-    unique_years = sorted(df['Date'].dt.year.unique())
+    unique_years = ["전체"] + sorted(df['Date'].dt.year.unique())
     selected_year = st.selectbox("연도 선택", unique_years)
 with col2:
     unique_months = ["전체"] + list(range(1, 13))
@@ -135,7 +135,7 @@ if st.session_state.filter_applied:
         start_date, end_date = date_range
         filtered_df = filtered_df[(filtered_df['Date'] >= pd.Timestamp(start_date)) & (filtered_df['Date'] <= pd.Timestamp(end_date))]
     
-    if selected_year:
+    if selected_year != "전체":
         filtered_df = filtered_df[filtered_df['Date'].dt.year == selected_year]
     if selected_month != "전체":
         filtered_df = filtered_df[filtered_df['Date'].dt.month == selected_month]
