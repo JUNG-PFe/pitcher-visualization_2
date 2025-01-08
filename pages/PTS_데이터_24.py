@@ -99,7 +99,7 @@ with col1:
 
     # 투수 이름 선택
     if pitcher_suggestions:
-        pitcher_name = st.selectbox("투수 이름 선택", ["전체"], pitcher_suggestions)
+        pitcher_name = st.selectbox("투수 이름 선택", ["전체"]+ pitcher_suggestions)
     else:
         pitcher_name = None
 
