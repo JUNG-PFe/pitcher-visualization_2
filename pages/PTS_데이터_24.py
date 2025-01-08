@@ -99,7 +99,7 @@ with col1:
 
     # 투수 이름 선택
     if pitcher_suggestions:
-        pitcher_name = st.selectbox("투수 이름 선택", pitcher_suggestions)
+        pitcher_name = st.selectbox("투수 이름 선택", ["전체"], pitcher_suggestions)
     else:
         pitcher_name = None
 
@@ -164,7 +164,7 @@ if st.session_state.filter_applied:
         filtered_df = filtered_df[filtered_df['Date'].dt.month == selected_month]
 
     # 투수 이름 필터
-    if pitcher_name:  # 투수 이름이 선택된 경우에만 필터 적용
+    if pitcher_name != "전체":  # 투수 이름이 선택된 경우에만 필터 적용
         filtered_df = filtered_df[filtered_df['Pitcher'] == pitcher_name]
 
     # 타자 이름 필터
