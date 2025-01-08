@@ -43,7 +43,7 @@ if "logged_in" not in st.session_state or not st.session_state.logged_in:
     st.error("로그인 후에 이 페이지를 이용할 수 있습니다.")
     st.stop()  # 로그인 상태가 아니면 여기서 실행 중지
 
-st.title("24 PTS 투수 존별 안타 타구속도")
+st.title("24 PTS 투수 존별 타구속도")
 
 # 세션 상태 초기화
 if "filter_applied" not in st.session_state:
@@ -145,7 +145,7 @@ if st.session_state.filter_applied:
         if filtered_h.empty:
             st.warning("H 데이터가 없습니다.")
         else:
-            st.subheader("안타 데이터 분석 및 시각화")
+            st.subheader("타구 데이터 분석 및 시각화")
 
             # 스트라이크 존 9등분
             strike_zone_x_edges = np.linspace(-23, 23, 4)  # X축 경계선
