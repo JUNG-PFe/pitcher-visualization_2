@@ -25,6 +25,25 @@ def load_new_data():
 
 df = load_new_data()
 
+st.set_page_config(
+    page_title="24 호크아이 투수 피칭 궤적",
+    page_icon="⚾",
+    layout="wide"
+)
+
+# -------------------------------
+# 로그인 여부 확인
+# -------------------------------
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.error("로그인 후에 이 페이지를 이용할 수 있습니다.")
+    st.stop()
+
+st.title("24 투수 피칭 궤적")
+
+# 세션 상태 초기화
+if "filter_applied" not in st.session_state:
+    st.session_state.filter_applied = False
+
 df['date'] = pd.to_datetime(df['date'], errors='coerce')
 df = df.dropna(subset=['date'])  # 날짜 없는 데이터 제거
 df['ball_pos_X'] = df['ball_pos_X'] * 100
