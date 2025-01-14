@@ -80,20 +80,49 @@ filtered_data = df[
 # 시각화 생성
 fig = go.Figure()
 
-# 그룹별로 궤적 추가
 for group in filtered_data['group'].unique():
     group_data = filtered_data[filtered_data['group'] == group]
     for pitch_type in group_data['pitch_type'].unique():
         pitch_data = group_data[group_data['pitch_type'] == pitch_type]
+        
+        # 궤적 추가
         fig.add_trace(go.Scatter3d(
             x=pitch_data['ball_pos_X'],
             y=pitch_data['ball_pos_Y'],
             z=pitch_data['ball_pos_Z'],
-            mode='lines+markers',
-            marker=dict(size=4, color=cols[pitch_type]),  # 구종별 색상 적용
-            line=dict(width=2, color=cols[pitch_type]),   # 구종별 선 색상 적용
-            name=f"{pitch_type} (Group {group})"
+            mode='lines',
+            line=dict(width=4, color=cols[pitch_type]),  # 구종별 선 색상 적용
+            name=f"{pitch_type} (Group {group})",
+            legendgroup=f"{pitch_type} (Group {group})"  # 범례 그룹 지정
         ))
+
+        # 마지막 점과 그 전 점 계산
+        if len(pitch_data) > 1:
+            last_point = pitch_data.iloc[-1]
+            second_last_point = pitch_data.iloc[-2]
+
+            # 기울기 계산
+            delta_y = last_point['ball_pos_Y'] - second_last_point['ball_pos_Y']
+            delta_x = last_point['ball_pos_X'] - second_last_point['ball_pos_X']
+            delta_z = last_point['ball_pos_Z'] - second_last_point['ball_pos_Z']
+
+            # y=150일 때 x와 z 값 계산
+            if last_point['ball_pos_Y'] > 150:
+                factor = (150 - last_point['ball_pos_Y']) / delta_y
+                extended_x = last_point['ball_pos_X'] + delta_x * factor
+                extended_z = last_point['ball_pos_Z'] + delta_z * factor
+
+                # 익스텐션 선 추가 (legendgroup 동일하게 설정)
+                fig.add_trace(go.Scatter3d(
+                    x=[last_point['ball_pos_X'], extended_x],  # x 좌표
+                    y=[last_point['ball_pos_Y'], 150],         # y 좌표
+                    z=[last_point['ball_pos_Z'], extended_z],  # z 좌표
+                    mode='lines',
+                    line=dict(color=cols[pitch_type], width=4),  # 점선 스타일
+                    name=f"{pitch_type} (Group {group})",  # 동일한 name
+                    legendgroup=f"{pitch_type} (Group {group})",  # 동일한 legendgroup
+                    showlegend=False  # 범례 표시 숨김
+                ))
 
 # 사각형 추가 (스트라이크 존)
 x_range = [-23, 23]
@@ -135,7 +164,7 @@ fig.update_layout(
         xaxis=dict(title="X Position (Scaled)", range=[-200, 200]),
         yaxis=dict(title="Y Position (Scaled)", range=[100, 1700]),
         zaxis=dict(title="Z Position (Scaled)", range=[0, 200]),
-        aspectratio=dict(x=1, y=4, z=1)
+        aspectratio=dict(x=2, y=4, z=1)
     ),
     title=f"{pitcher_selected} - {date_selected} - Selected Zones: {', '.join(map(str, zone_selected))}",
     margin=dict(l=0, r=0, b=0, t=40),
@@ -155,4 +184,4 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 st.write("---")
-st.write("범례에서 보고 싶은 것만 체크하여 확인 가능")
+st.write("범례에서 보고 싶은 것만 체크하여 확인 가능_한 구종당 범례")
