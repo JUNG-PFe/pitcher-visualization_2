@@ -249,18 +249,29 @@ with tab2:
     with col4:
         end_date_2 = st.date_input("기간 2 종료 날짜", df['Date'].max(), key="end_date_2")
 
-    # 비교할 변수 선택 (여러 변수)
-    selected_variables = st.multiselect("비교할 변수 선택", compare_variables, key="period_variables")
+    # 구종 선택 및 비교할 변수 선택 (가로 배치)
+    col5, col6 = st.columns(2)
+    with col5:
+        pitch_types = sorted(df['구종'].unique())  # 구종 리스트 생성
+        selected_pitch_types = st.multiselect("구종 선택", pitch_types, key="pitch_types")
+    with col6:
+        selected_variables = st.multiselect("비교할 변수 선택", compare_variables, key="period_variables")
 
-    # 데이터 필터링 (선수 이름 포함)
+    # 데이터 필터링 (선수 이름 및 구종 포함)
     if pitcher_name and selected_variables:
-        filtered_df_1 = df[(df['투수'] == pitcher_name) & 
-                           (df['Date'] >= pd.Timestamp(start_date_1)) & 
-                           (df['Date'] <= pd.Timestamp(end_date_1))]
+        filtered_df_1 = df[
+            (df['투수'] == pitcher_name) & 
+            (df['Date'] >= pd.Timestamp(start_date_1)) & 
+            (df['Date'] <= pd.Timestamp(end_date_1)) &
+            (df['구종'].isin(selected_pitch_types) if selected_pitch_types else True)
+        ]
 
-        filtered_df_2 = df[(df['투수'] == pitcher_name) & 
-                           (df['Date'] >= pd.Timestamp(start_date_2)) & 
-                           (df['Date'] <= pd.Timestamp(end_date_2))]
+        filtered_df_2 = df[
+            (df['투수'] == pitcher_name) & 
+            (df['Date'] >= pd.Timestamp(start_date_2)) & 
+            (df['Date'] <= pd.Timestamp(end_date_2)) &
+            (df['구종'].isin(selected_pitch_types) if selected_pitch_types else True)
+        ]
 
         if not filtered_df_1.empty and not filtered_df_2.empty:
             comparison_results = []
